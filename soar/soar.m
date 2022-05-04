@@ -8,11 +8,6 @@ function [q_hat] = soar(q, w, P, v_i, v_b)
 % Rishav (2022/03/15)
 
 % [Step 1] Compute a-priori Davenport matrix
-% [Step 2] Compute measurement Davenport matrix
-% [Step 3] Update state vector & covariance Matrix
-% [Step 4] Update state estimate and covariance to next measurement time
-
-% [Step 1]
 F = inv(P); % Eqn(61)
 F_tt = F(1:3,1:3); 
 T = quaternion_to_dcm(q);
@@ -20,15 +15,21 @@ B = (0.5*trace(F_tt)*eye(3) - F_tt) * T; % Eqn(33)
 
 % Construct Davenport matrix, Eqn(12) and Eqn(13)
 Z = [B(2,3)-B(3,2); B(3,1)-B(1,3); B(1,2)-B(2,1)];
-K = [B + B'- eye(3)*trace(B), Z; Z', trace(B)];
+K_minus = [B + B'- eye(3)*trace(B), Z; Z', trace(B)];
 
-% [Step 2]
+% [Step 2] Compute measurement Davenport matrix
 B_m = (v_b.*repmat(w,[1 3])')*v_i';
 Z_m = [B_m(2,3)-B_m(3,2); B_m(3,1)-B_m(1,3); B_m(1,2)-B_m(2,1)];
 K_m = [B_m + B_m'- eye(3)*trace(B_m), Z_m; Z_m', trace(B_m)];
 
-% [Step 3]
+% [Step 3] Update state vector & covariance Matrix
+K_plus = K_m + K_minus;
+Psi = 0;
 
+q_plus = esoq();
+
+
+% [Step 4] Update state estimate and covariance to next measurement time
 end
 
 % Quaternion to rotation matrix
