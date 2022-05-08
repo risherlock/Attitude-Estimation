@@ -1,0 +1,99 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{bm}
+
+\title{Determining \textit{Tukka} for \\ Attitude Determination Algorithm\footnote{We invented the word ourselves. The term \textit{Tukka} refers to the test input values used to validate any algorithm. This word was first used with this meaning in June 21, 2021, on one of the weekly meetings of team attending the \textit{FloatSat} course. We have agreed to adopt the word ever since. \textit{Note: Tukka is a noun and can be used for both singular and plural cases.}}}
+
+\author{Rishav \\ ORION Space}
+\date{June 27, 2021}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\newpage
+\section{Background}
+After implementation of attitude determination algorithm, it is very important to check if the software is working as expected. In order to do so, we can use some test data and see if it produces expected result. \medskip
+
+If we consider the algorithm for tilt compensated heading determination, the input to the algorithm is the sensor readings of magnetometer $\bm{m}^{B}$ and accelerometer $\bm{a}^{B}$ and the output is tilt compensated yaw $\tilde{\psi}$. One of the ways of testing the implementation of this algorithm would be to take two arbitrary set of readings that represents $\bm{m}^{B}$ and $\bm{a}^{B}$ and then share the output $\tilde{\psi}$ with other team members. It is resonable to assume that the implementation is correct if every one get the result of $\tilde{\psi}$. But this approach is doomed to fail if every one in the team made same error in their software or if there is no team to test with. \medskip
+
+This document presents a way to generate \textit{Tukka} (i.e. $\bm{m}^{B}$ and $\bm{a}^{B}$) and see if the implementation is correct using more formal process. This method is applicable to any attitude determination method that uses vector measurements.
+
+\section{The Algorithm}
+\subsection{Finding vectors in NED frame}
+We know that the rotation matrix $\bm{Q}(\psi,\theta,\phi)$ transforms the vectors in NED frame to vectors in body frame as follows.
+
+\begin{equation}
+    \begin{split}
+        \bm{a}^{B} &= \bm{Q}\,\bm{a}^{N} \\
+        \bm{m}^{B} &= \bm{Q}\,\bm{m}^{N} \\
+        \label{eqn::main}
+    \end{split}
+\end{equation}
+
+Where $\bm{a}^{N}$ and $\bm{m}^{N}$ are the acceleration and magnetic field intensity vectors in NED frame. The \textit{Tukka} that we are looking for are the terms in left hand sides of the above equations which we can find if we can know values of $\bm{Q}$, $\bm{a}^{N}$ and $\bm{m}^{N}$\medskip
+
+Based on our location on Earth, we can determine $\bm{a}^{N}$ and $\bm{m}^{N}$ because they can be written as follows.
+
+\begin{equation}
+    \bm{a}^{N} = \begin{bmatrix} 0\\ 0\\ g\end{bmatrix}
+    \quad \text{and} \quad
+    \bm{m}^{N} = \begin{bmatrix} \cos\delta\\ 0\\\sin\delta\end{bmatrix}
+    \label{eqn::vect_ned}      
+\end{equation}
+
+where, $g$ is acceleration due to gravity and $\delta$ is angle of inclination of magnetic field. \medskip
+
+\begin{figure}[ht]
+    \begin{center}
+        \includegraphics[width=15cm]{fig_location.PNG}
+        \caption{\href{http://www.geomag.bgs.ac.uk/data_service/models_compass/igrf_calc.html}{\color{red}Geomag} website allows us to find the value of inclination of magnetic field for given location.}        
+    \end{center}
+\end{figure}
+
+It is fair to conclude that $\bm{a}^{N}$ and $\bm{m}^{N}$ are functions of $g$ and $\delta$ respectively. So, we can determine these vectors based on where we are right now on the Earth. For instance, currently I am in Bhaktapur so I know that
+
+\begin{equation*}
+    \begin{split}
+        g &= 9.8 m/s^{2}, \quad \text{and}\\
+        \delta &= 43.802^{\circ} = 0.7675992957 \text{ radians}
+    \end{split}
+\end{equation*}
+
+The magnetic inclination for any location on Earth can be found from \href{http://www.geomag.bgs.ac.uk/data_service/models_compass/igrf_calc.html}{\color{red}Geomag} website.
+
+\subsection{Finding \textit{Tukka} and testing software}
+Now that we have determined the vectors in NED frame, all we need to do is to use arbitrary roll $\phi$, pitch $\psi$ and yaw $\psi$ to find $\bm{Q}$. Actually, later we will compare if output of our implementation $\tilde{\psi}$ equals to the $\psi$ that we used now. We can use following equation to find $\bm{Q}$.
+
+\begin{equation}
+    \bm{Q}(\psi, \theta, \phi) = 
+    \begin{bmatrix}
+        \text{c}\psi & \text{c}\theta\,\text{s}\psi & -\text{s}\theta \\
+        \text{s}\phi\,\text{s}\theta\,\text{c}\psi - \text{c}\theta\,\text{s}\psi & \text{s}\phi\,\text{s}\theta\,\text{s}\psi + \text{c}\phi\,\text{c}\psi & \text{s}\phi\,\text{c}\theta \\
+        \text{c}\phi\,\text{s}\theta\,\text{c}\psi + \text{s}\phi\,\text{s}\psi & \text{c}\phi\,\text{c}\theta\,\text{s}\psi -\text{s}\phi\,\text{c}\psi & \text{c}\phi\,\text{c}\theta
+    \end{bmatrix}
+    \label{eqn::Q}
+\end{equation}
+Now we know all the paramaters to find $\bm{m}^{B}$ and $\bm{a}^{B}$ from Eqn.\,(\ref{eqn::main}). \medskip
+
+Now this is where the advantage of this process comes into play. We can assign arbitrary $\psi$, $\theta$ and $\phi$ and compute $\bm{Q}$ using Eqn.\,(\ref{eqn::Q}). Using this $\bm{Q}$ we find input \textit{Tukka} to our algorithm (i.e. $\bm{m}^{B}$ and $\bm{a}^{B}$). We will know if our algorithm is working if the value of tilt compensated heading computed by our algorithm is equal to the value of yaw that we assigned to find $\bm{Q}$. i.e.
+
+\begin{equation}
+    \tilde{\psi} = \psi
+\end{equation}
+
+\section{Example}
+Let us suppose, from where I am right now, that $g = 9.8$ m/s$^{2}$ and $\delta = 43.802^{\circ} = 0.7675992957$ radians. Similarly, let us imagine that we choose to assign the orientation of our \textit{FloatSat} as $\psi = \pi/4$, $\theta = \pi/8$ and $\theta = \pi/4$ radians. Now, following steps are to be followed to test the implementation tilt compensation algorithm.
+
+\begin{enumerate}
+    \item Use Eq.\,(\ref{eqn::Q}) to find $\bm{Q}$.
+    \item Establish the values of $\bm{a}^{N}$ and $\bm{m}^{N}$ using $g$ and $\delta$ using Eq.\,(\ref{eqn::vect_ned}).
+    \item Finally, use Eqn.\,(\ref{eqn::main}) to find $\bm{m}^{B}$ and $\bm{a}^{B}$ i.e. \textit{Tukka} for the tilt compensation algorithm.
+    \item Use these $\bm{m}^{B}$ and $\bm{a}^{B}$ to determine $\tilde{\psi}$ using tilt compensation algorithm.
+    \item If $\tilde{\psi}=\psi=\pi/4$, the software implementation has passed this test.
+\end{enumerate}
+\end{document}
