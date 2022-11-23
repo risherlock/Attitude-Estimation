@@ -1,67 +1,85 @@
-function [q_hat] = soar(q, w, P, v_i, v_b)
-% Implementation of SOAR filter
-% 
-% References:
-%   [1] Sequential Optimal Attitude Recursion Filter
-%       John A. Christian, E. Glenn Lightsey (2010)
+function [q_hat, P_hat, beta_hat] = soar(q, P, Q, beta, v_i, v_b, w, dt)
+% Inputs:
+%   q_   = A-priori attitude estimate
+%   P_   = A-priori covariance matrix
+%   v_i  = Vector in inertial frame
+%   v_b  = Vector sensor readings
+%   w    = Gyroscope readings
+%   dt   = Sample time
+%   Q    = Process noise covariance [6x6] 
+%
+% Reference:
+%   Sequential Optimal Attitude Recursion Filter
+%   John A. Christian, E. Glenn Lightsey (2010)
 %
 % Rishav (2022/03/15)
 
-% [Step 1] Compute a-priori Davenport matrix
-F = inv(P); % Eqn(61)
-F_tt = F(1:3,1:3); 
-T = quaternion_to_dcm(q);
-B = (0.5*trace(F_tt)*eye(3) - F_tt) * T; % Eqn(33) 
 
-% Construct Davenport matrix, Eqn(12) and Eqn(13)
-Z = [B(2,3)-B(3,2); B(3,1)-B(1,3); B(1,2)-B(2,1)];
-K_minus = [B + B'- eye(3)*trace(B), Z; Z', trace(B)];
-
-% [Step 2] Compute measurement Davenport matrix
-B_m = (v_b.*repmat(w,[1 3])')*v_i';
-Z_m = [B_m(2,3)-B_m(3,2); B_m(3,1)-B_m(1,3); B_m(1,2)-B_m(2,1)];
-K_m = [B_m + B_m'- eye(3)*trace(B_m), Z_m; Z_m', trace(B_m)];
-
-% [Step 3] Update state vector & covariance Matrix
-K_plus = K_m + K_minus;
-Psi = 0;
-
-q_plus = esoq();
-
-
-% [Step 4] Update state estimate and covariance to next measurement time
-end
-
-% Quaternion to rotation matrix
-function [Q] = quaternion_to_dcm(q)
-% Input:
-%   q = [q0,q1,q2,q3]
-%     = [cos(psi/2), e1 * sin(psi/2), e2 * sin(psi/2), e3 * sin(psi/2)]
-%   
-%   where, 
-%       e1,e2,e3 = 3D orthogonal basis vectors and
-%       psi = Angle of the axis-angle representation of quaternion
+% The algorithms proceeds in 4 steps:
+%   A. Compute a-priori Davenpport matrix
+%   B. Compute measurement Davenport matrix
+%   C. Update state vector and covariance matrix
+%   D. Propagate state estimate and covariance matrix
 %
-% Output:
-%   Q = Rotation matrix corresponding to the input quaternion
-%
-% Reference:
-%   [1] Schaub, Junkins - Analytical Mechanics of Space Systems (4th ed.)
+% Notes:
+%   Propagated state estimate and covariance matrix of last time step is input 
+%   to current time step. So, it is reasonable to perform this step at first.
 
-q0 = q(1);
-q1 = q(2);
-q2 = q(3);
-q3 = q(4);
+% STEP D %
+% Propagate quaternion and state covariance
+q_ = propagate_quaternion(q, w, dt);
+P_ = propagate_state_covariance(P, Q, w, dt);
 
-% Eqn(3.98) [1]
-Q = zeros(3);
-Q(1,1) = q0^2 + q1^2 - q2^2 - q3^2;
-Q(2,2) = q0^2 - q1^2 + q2^2 - q3^2;
-Q(3,3) = q0^2 - q1^2 - q2^2 + q3^2;
-Q(1,2) = 2*(q1*q2 + q0*q3);
-Q(1,3) = 2*(q1*q3 - q0*q2);
-Q(2,1) = 2*(q1*q2 - q0*q3);
-Q(2,3) = 2*(q2*q3 + q0*q1);
-Q(3,1) = 2*(q1*q3 + q0*q2);
-Q(3,2) = 2*(q2*q3 - q0*q1);
+% STEP A %
+% Compute a-priori attitude profile matrix, B_
+I = eye(3);
+inv_Ptt = inv(P_(1:3, 1:3));
+T = quaternion_to_dcm(q_);
+B_ = (0.5*trace(inv_Ptt)*I - inv_Ptt)*T;
+
+% Compute a-priori Davenport matrix, K_
+S = B_ + B_';
+mu = trace(B_);
+z = [B_(2,3)-B_(3,2); B_(3,1)-B_(1,3); B_(1,2)-B_(2,1)];
+K_ =[S - mu*I, z; z', mu];
+
+% STEP B %
+% Compute measurement attitude profile matrix, B_m
+B_m = v_b*v_i';
+
+% Compute measurement Davenport matrix, K_m
+S = B_m + B_m';
+mu = trace(B_m);
+z = [B_m(2,3)-B_m(3,2); B_m(3,1)-B_m(1,3); B_m(1,2)-B_m(2,1)];
+K_m =[S - mu*I, z; z', mu];
+
+% STEP C %
+% Compute SOAR attitude profile and Davenport matrix
+B_hat = B_m + B_;
+K_hat = K_m + K_;
+
+% Update  quaternion attitude
+q_hat = [1, 0, 0, 0]';
+
+% Compute Ficher information matrix
+F_ = inv(P_);
+F_bt = F_(4:6, 1:3);
+F_tb = F_(1:3, 4:6);
+F_bb = F_(4:6, 4:6);
+
+% Update non attiude parameters
+Psi = [q_(4),q_(3),-q_(2);-q_(3),q_(4),q_(1);q_(2),-q_(1),q_(4);-q_(1),-q_(2),-q_(3)]';
+dbeta = -2 * inv(F_bb) * F_bt * Psi * q_hat;
+beta_hat = beta + dbeta;
+
+% Update Ficher information matrix
+Ftb = F_tb;
+Fbt = Ftb';
+Fbb = F_bb;
+Ftt = trace(T * B_hat') * I - T * B_hat' + F_tb * inv(F_bb) * F_bt;
+F_hat = [Ftt , Ftb; Fbt, Fbb];
+
+% Update covariance matrix
+P_hat  = inv(F_hat);
 end
+ 
