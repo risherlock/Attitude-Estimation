@@ -28,7 +28,7 @@ $$
 $$
 
 $$
-  \bm{B}^{-} = \left[\frac{1}{2}\,\textnormal{tr}\left[(\bm{P_{\theta\theta}^{-}})^{-1}\right]\bm{I}_{3\times 3} - (\bm{P_{\theta\theta}^{-}})^{-1}\right]\bm{T}(\hat{\bar{\bm{q}}}^{-})
+  \bm{B}^{-} = \left[\frac{1}{2}\,\textnormal{tr}\left[(\bm{P}_{\theta\theta}^{-})^{-1}\right]\bm{I}_{3\times 3} - (\bm{P}_{\theta\theta}^{-})^{-1}\right]\bm{T}(\hat{\bar{\bm{q}}}^{-})
 $$
 
 $$
@@ -37,13 +37,6 @@ $$
     \bm{P}_{\theta\theta}^{-} & \bm{P}_{\theta\beta}^{-} \\
     \bm{P}_{\beta\theta}^{-} & \bm{P}_{\beta\beta}^{-} \\
   \end{bmatrix}
-  \qquad
-  \bm{F}^{-} =
-  \begin{bmatrix}
-    \bm{F}_{\theta\theta}^{-} & \bm{F}_{\theta\beta}^{-} \\
-    \bm{F}_{\beta\theta}^{-} & \bm{F}_{\beta\beta}^{-} \\
-  \end{bmatrix}
-  \approx (\bm{P}^{-})^{-1}
 $$
 
 $$
@@ -83,21 +76,35 @@ $$
   \bm{B}^{m}_{z} = \sum^{m}_{i=1}w_{i}\,(\bm{e}_{i})_{\textnormal{B}}\,(\bm{e}_{i})_{\textnormal{B}}^{\intercal}
 $$
 
-\paragraph{Update State Vector and Covariance Matrix}
+\paragraph{Update State Vector and Covariance Matrix}\mbox{}\\\\
+\textit{Update quaternion attitude:}
+$$
+  \bm{K}^{+}\hat{\bar{\bm{q}}}^{+} = \lambda\hat{\bar{\bm{q}}}^{+}
+  \longrightarrow \hat{\bar{\bm{q}}}^{+}
+$$
 
 $$
-  \bm{\Psi}(\bar{\bm{q}}^{-}) = \left[q_{4}^{-}\bm{I}_{3\times 3} - [\bm{q}^{-}\times] - \bm{q}^{-}\right]
-  \quad\quad\quad\quad
   \bm{K}^{+} = \bm{K}^{m} + \bm{K}^{-}
 $$
 
-\textit{Update state vector using solution to Wahba's problem:}
+\textit{Update non attitude parameters:}
+$$
+  \delta\bm{\beta} = - 2\left(\bm{F}_{\beta\beta}^{-}\right)^{-1}\bm{F}_{\beta\theta}^{-}\,\bm{\Psi}\,(\bar{\bm{q}}^{-})\hat{\bar{\bm{q}}}^{+}
+  \longrightarrow \bm{\beta}^{+} = \bm{\beta}^{-} + \delta\bm{\beta}
+$$
 
 $$
-\bm{K}^{+}\hat{\bar{\bm{q}}}^{+} = \lambda\hat{\bar{\bm{q}}}^{+} 
-\quad\quad\quad
+\bm{F}^{-} =
+  \begin{bmatrix}
+    \bm{F}_{\theta\theta}^{-} & \bm{F}_{\theta\beta}^{-} \\
+    \bm{F}_{\beta\theta}^{-} & \bm{F}_{\beta\beta}^{-} \\
+  \end{bmatrix}
+  \approx (\bm{P}^{-})^{-1}
 $$
 
+$$
+  \bm{\Psi}(\bar{\bm{q}}^{-}) = \left[q_{4}^{-}\bm{I}_{3\times 3} - [\bm{q}^{-}\times] - \bm{q}^{-}\right]
+$$
 
 \textit{Update covariance matrix:}
 
