@@ -24,11 +24,11 @@ $$
   \quad\quad\quad
   \mu^{-} = \textnormal{tr}[\bm{B}\textnormal]
   \quad\quad\quad
-  [\bm{z}\times] = \bm{B}^{\intercal} - \bm{B}
+  [\bm{z}\times] = (\bm{B}^{-})^{\intercal} - \bm{B}^{-}
 $$
 
 $$
-  \bm{B}^{-} = \left[\frac{1}{2}\,\textnormal{tr}\left[(\bm{P_{\theta\theta}^{-}})^{-1}\right]\bm{I}_{3\times 3} - (\bm{P_{\theta\theta}^{-}})^{-1}\right]\bm{T}(\hat{\bar{\bm{q}}}^{-1})
+  \bm{B}^{-} = \left[\frac{1}{2}\,\textnormal{tr}\left[(\bm{P_{\theta\theta}^{-}})^{-1}\right]\bm{I}_{3\times 3} - (\bm{P_{\theta\theta}^{-}})^{-1}\right]\bm{T}(\hat{\bar{\bm{q}}}^{-})
 $$
 
 $$
@@ -68,18 +68,19 @@ $$
   [\bm{z}\times] = \bm{B}^{\intercal} - \bm{B}
 $$
 
+$$
+  \bm{B}^{m} = \sum_{z=1}^{l}\bm{B}_{z}^{m}
+$$
+
 \textit{It measurements are quaternions:}
 $$
   \bm{B}^{m}_{z} = \left[\frac{1}{2}\,\textnormal{tr}\left[(\bm{P_{\theta\theta}^{m}})^{-1}\right]\bm{I}_{3\times 3} - (\bm{P_{\theta\theta}^{m}})^{-1}\right]\bm{T}(\bar{\bm{q}}^{m})
 $$
 
 \textit{If measurements are unit vectors:}
-$$
-  \bm{B}^{m} = \sum_{z=1}^{l}\bm{B}_{z}^{m}
-$$
 
 $$
-  \bm{B}^{m}_{z} = \sum^{m}_{i=1}w_{i}(\bm{e}_{i})_{\textnormal{B}}(\bm{e}_{i})_{\textnormal{B}}^{\intercal}
+  \bm{B}^{m}_{z} = \sum^{m}_{i=1}w_{i}\,(\bm{e}_{i})_{\textnormal{B}}\,(\bm{e}_{i})_{\textnormal{B}}^{\intercal}
 $$
 
 \paragraph{Update State Vector and Covariance Matrix}
