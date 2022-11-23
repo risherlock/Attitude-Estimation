@@ -1,0 +1,133 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath, amssymb, bm}
+
+\title{A Short Note on SOAR:\\ Sequential Optimal Attitude Recursion Filter}
+\author{Rishav}
+\date{November 22, 2022}
+
+\begin{document}
+\maketitle
+
+\paragraph{Compute a-priori Davenport Matrix}
+
+$$
+  \bm{K}^{-} =
+  \begin{bmatrix}
+    \bm{S}^{-} - \mu^{-}\bm{I}_{3\times 3} & \bm{z}^{-} \\
+    (\bm{z}^{-})^{\intercal} & \mu^{-}
+  \end{bmatrix}
+$$
+
+$$
+  \bm{S}^{-} = \bm{B}^{-} + (\bm{B}^{-})^{\intercal}
+  \quad\quad\quad
+  \mu^{-} = \textnormal{tr}[\bm{B}\textnormal]
+  \quad\quad\quad
+  [\bm{z}\times] = \bm{B}^{\intercal} - \bm{B}
+$$
+
+$$
+  \bm{B}^{-} = \left[\frac{1}{2}\,\textnormal{tr}\left[(\bm{P_{\theta\theta}^{-}})^{-1}\right]\bm{I}_{3\times 3} - (\bm{P_{\theta\theta}^{-}})^{-1}\right]\bm{T}(\hat{\bar{\bm{q}}}^{-1})
+$$
+
+$$
+  \bm{P}^{-} =
+  \begin{bmatrix}
+    \bm{P}_{\theta\theta}^{-} & \bm{P}_{\theta\beta}^{-} \\
+    \bm{P}_{\beta\theta}^{-} & \bm{P}_{\beta\beta}^{-} \\
+  \end{bmatrix}
+  \qquad
+  \bm{F}^{-} =
+  \begin{bmatrix}
+    \bm{F}_{\theta\theta}^{-} & \bm{F}_{\theta\beta}^{-} \\
+    \bm{F}_{\beta\theta}^{-} & \bm{F}_{\beta\beta}^{-} \\
+  \end{bmatrix}
+  \approx (\bm{P}^{-})^{-1}
+$$
+
+$$
+  \bm{T}(\hat{\bar{\bm{q}}}^{-}) = [(\hat{q}^{-}_{4})^{2} - (\hat{\bm{q}}^{-})^{\intercal}\hat{\bm{q}}^{-}]\bm{I}_{3\times 3} + 2\hat{\bm{q}}^{-}(\hat{\bm{q}}^{-})^{\intercal} - 2\hat{q}^{-}_{4}[\hat{\bm{q}}^{-}\times]
+$$
+
+\paragraph{Compute measurement Davenport Matrix}
+
+$$
+  \bm{K}^{m} =
+  \begin{bmatrix}
+    \bm{S}^{m} - \mu^{m}\bm{I}_{3\times 3} & \bm{z}^{m} \\
+    (\bm{z}^{m})^{\intercal} & \mu^{m}
+  \end{bmatrix}
+$$
+
+$$
+  \bm{S}^{m} = \bm{B}^{m} + (\bm{B}^{m})^{\intercal}
+  \quad\quad\quad
+  \mu^{m} = \textnormal{tr}[\bm{B}\textnormal]
+  \quad\quad\quad
+  [\bm{z}\times] = \bm{B}^{\intercal} - \bm{B}
+$$
+
+\textit{It measurements are quaternions:}
+$$
+  \bm{B}^{m}_{z} = \left[\frac{1}{2}\,\textnormal{tr}\left[(\bm{P_{\theta\theta}^{m}})^{-1}\right]\bm{I}_{3\times 3} - (\bm{P_{\theta\theta}^{m}})^{-1}\right]\bm{T}(\bar{\bm{q}}^{m})
+$$
+
+\textit{If measurements are unit vectors:}
+$$
+  \bm{B}^{m} = \sum_{z=1}^{l}\bm{B}_{z}^{m}
+$$
+
+$$
+  \bm{B}^{m}_{z} = \sum^{m}_{i=1}w_{i}(\bm{e}_{i})_{\textnormal{B}}(\bm{e}_{i})_{\textnormal{B}}^{\intercal}
+$$
+
+\paragraph{Update State Vector and Covariance Matrix}
+
+$$
+  \bm{\Psi}(\bar{\bm{q}}^{-}) = \left[q_{4}^{-}\bm{I}_{3\times 3} - [\bm{q}^{-}\times] - \bm{q}^{-}\right]
+  \quad\quad\quad\quad
+  \bm{K}^{+} = \bm{K}^{m} + \bm{K}^{-}
+$$
+
+\textit{Update state vector using solution to Wahba's problem:}
+
+$$
+\bm{K}^{+}\hat{\bar{\bm{q}}}^{+} = \lambda\hat{\bar{\bm{q}}}^{+} 
+\quad\quad\quad
+$$
+
+
+\textit{Update covariance matrix:}
+
+$$
+  \bm{P}^{+} \approx \left(\bm{F}^{+}\right)^{-1}
+$$
+
+$$
+  \bm{F}_{\theta\theta}^{+} = \textnormal{tr}\left[ \bm{T}^{\textnormal{I}}_{\textnormal{B}} (\bm{B}^{+})^{\intercal} \right]\bm{I}_{3\times 3} - \bm{T}_{\textnormal{B}}^{\textnormal{I}} (\bm{B}^{+})^{\intercal} + \bm{F}_{\theta\beta}^{-}\left( \bm{F}_{\beta\beta}^{-} \right)^{-1} \bm{F}_{\beta\theta}^{-}
+$$
+
+$$
+  \bm{F}^{+}_{\theta\beta} =  \bm{F}^{-}_{\theta\beta}
+$$
+
+$$
+  \bm{F}^{+}_{\beta\theta} = \left( \bm{F}_{\theta\beta}^{+} \right)^{\intercal}
+$$
+
+$$
+  \bm{F}_{\beta\beta}^{+} = \bm{F}_{\beta\beta}^{-}
+$$
+
+\paragraph{Propagate state estimate and covariance to next measurement time}
+
+$$
+  \dot{\hat{\bm{x}}} = \bm{f}\left(\hat{\bm{x}}(t),\, \bm{u}(t), t\right)
+$$
+
+$$
+  \dot{\bm{P}} = \bm{F}(\hat{\bm{x}},\, t)\,\bm{P}(t) + \bm{P}(t)\,\bm{F}(\hat{\bm{x}},\, t)^{\intercal} + \bm{G}(t)\,\bm{Q}(t)\,\bm{G}^{\intercal}
+$$
+
+\end{document}
